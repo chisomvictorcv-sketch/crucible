@@ -2,6 +2,7 @@
 
 High-performance Rust backend for the Crucible smart contract testing platform, providing performance profiling, mock service layers, specialized serialization utilities, and robust background monitoring.
 
+<<<<<<< HEAD
 ## 🚀 Tech Stack
 - **Web Framework**: Axum (async Rust)
 - **Runtime**: Tokio
@@ -9,6 +10,58 @@ High-performance Rust backend for the Crucible smart contract testing platform, 
 - **Caching & Jobs**: Redis (via Apalis)
 - **Observability**: OpenTelemetry + Tracing
 - **API Documentation**: Utoipa (Swagger UI)
+=======
+## Technical Stack
+- **Axum**: High-performance web framework.
+- **SQLx**: Async PostgreSQL driver with compile-time checked queries.
+- **Redis**: Caching and threshold tracking.
+- **Tracing**: Observability and structured logging.
+
+## API Endpoints
+
+### Rules Management
+- `GET /api/alerts/rules` - List all alerting rules.
+- `POST /api/alerts/rules` - Create a new alerting rule.
+- `GET /api/alerts/rules/:id` - Get details of a specific rule.
+
+### Log Ingestion
+- `POST /api/alerts/ingest` - Ingest a log entry for pattern matching.
+
+### Build Error Analytics Dashboard API
+- `GET /api/v1/errors/dashboard/build-errors` — Returns build error analytics (total errors, error types, recent errors)
+    - **Response:**
+      ```json
+      {
+        "total_errors": 42,
+        "error_types": [["TypeA", 20], ["TypeB", 22]],
+        "recent_errors": [
+          {"id": 1, "error_type": "TypeA", "message": "...", "occurred_at": "2024-05-28T12:34:56"}
+        ]
+      }
+      ```
+    - **Description:**
+      Returns analytics for build errors, including total count, breakdown by type, and recent errors. Uses Redis for caching and SQLx for DB access. See `src/api/handlers/errors.rs` for details.
+
+## Database Schema
+```sql
+CREATE TABLE log_alert_rules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    pattern TEXT NOT NULL,
+    threshold INT NOT NULL DEFAULT 1,
+    interval_seconds INT NOT NULL DEFAULT 60,
+    is_enabled BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE log_alerts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    rule_id UUID NOT NULL REFERENCES log_alert_rules(id),
+    message TEXT NOT NULL,
+    triggered_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+> Production-ready API server for the Crucible smart contract testing platform, built with Rust, Axum, PostgreSQL, and Redis.
+>>>>>>> origin/main
 
 ---
 
@@ -64,7 +117,494 @@ This application uses a layered configuration system. Base values and environmen
 
 ### Environment Variables
 
+<<<<<<< HEAD
 | Variable | Default | Required in Prod? | Description |
+=======
+## Project Structure
+
+```
+backend/
+├── docker-compose.yml      # Docker Compose service orchestration
+├── Dockerfile              # Multi-stage build for the Rust binary
+├── Cargo.toml              # Rust dependencies and build configuration
+├── .env.example            # Environment variable template
+├── .dockerignore           # Files excluded from Docker build context
+├── README.md               # This file
+├── migrations/             # SQLx database migrations
+│   └── .keep
+├── scripts/
+│   └── init-db.sql         # Database initialization (schema + seeds)
+└── src/
+    ├── main.rs             # Application entry point, router, health checks
+    └── error.rs            # Custom error types with HTTP status mapping
+```
+
+## Environment Variables
+
+| Variable                  | Default                     | Description                              |
+|---------------------------|-----------------------------|------------------------------------------|
+| `APP_ENV`                 | `development`               | Environment (`development`/`production`) |
+| `APP_PORT`                | `8080`                      | HTTP server port                         |
+| `RUST_LOG`                | `crucible_backend=debug`    | Log level filter                         |
+| `DATABASE_URL`            | *(composed from parts)*     | Full PostgreSQL connection string        |
+| `POSTGRES_USER`           | `crucible`                  | PostgreSQL username                      |
+| `POSTGRES_PASSWORD`       | `crucible_secret`           | PostgreSQL password                      |
+| `POSTGRES_DB`             | `crucible_db`               | PostgreSQL database name                 |
+| `DATABASE_MAX_CONNECTIONS`| `10`                        | Max pool connections                     |
+| `DATABASE_MIN_CONNECTIONS`| `2`                         | Min pool connections                     |
+| `REDIS_URL`               | *(composed from parts)*     | Full Redis connection string             |
+| `REDIS_PASSWORD`          | `crucible_redis_secret`     | Redis authentication password            |
+| `REDIS_POOL_SIZE`         | `5`                         | Redis connection pool size               |
+| `JWT_SECRET`              | *(dev default)*             | JWT signing secret                       |
+| `CORS_ALLOWED_ORIGINS`    | `localhost:3000,5173`       | Comma-separated allowed origins          |
+
+## Docker Compose Features
+
+### Health Checks
+
+All services include Docker health checks:
+
+- **PostgreSQL**: `pg_isready` command verifying database connectivity
+- **Redis**: `redis-cli PING` command verifying cache availability
+- **App**: HTTP `GET /health` checking both downstream dependencies
+
+The `app` service uses `depends_on` with `condition: service_healthy` to ensure infrastructure is ready before starting.
+
+### Resource Limits
+
+Each service has memory and CPU limits configured via `deploy.resources`:
+
+| Service    | Memory Limit | CPU Limit | Memory Reserve | CPU Reserve |
+|------------|-------------|-----------|----------------|-------------|
+| `app`      | 512 MB      | 2.0       | 128 MB         | 0.5         |
+| `postgres` | 512 MB      | 1.0       | 128 MB         | 0.25        |
+| `redis`    | 256 MB      | 0.5       | 64 MB          | 0.1         |
+
+### Persistent Volumes
+
+Named volumes ensure data survives container restarts:
+
+- `crucible-postgres-data` — PostgreSQL data directory
+- `crucible-redis-data` — Redis append-only file and snapshots
+- `crucible-pgadmin-data` — pgAdmin configuration
+
+### Networking
+
+All services communicate over the `crucible-network` bridge network with a dedicated subnet (`172.28.0.0/16`), isolating traffic from other Docker workloads.
+
+### Logging
+
+JSON file logging with rotation:
+- App: 50 MB max file, 5 files retained
+- Infrastructure: 10 MB max file, 3 files retained
+
+## Database Schema
+
+The init script (`scripts/init-db.sql`) creates:
+
+| Table         | Purpose                                      |
+|---------------|----------------------------------------------|
+| `contracts`   | Deployed smart contract metadata             |
+| `test_runs`   | Test execution results per contract          |
+| `test_cases`  | Individual test results within a run         |
+| `jobs`        | Background job queue tracking                |
+
+Extensions enabled: `uuid-ossp`, `pgcrypto`, `citext`
+
+## API Endpoints
+
+| Method | Path             | Description                    |
+|--------|------------------|--------------------------------|
+| `GET`  | `/health`        | Health check (DB + Redis)      |
+| `GET`  | `/api/v1/status` | API status and version info    |
+
+## Production Deployment
+
+For production, update the following:
+
+1. **Change all passwords** in `.env` — never use defaults
+2. **Set `APP_ENV=production`**
+3. **Set `RUST_LOG=crucible_backend=info,tower_http=info`** — reduce log verbosity
+4. **Set a strong `JWT_SECRET`** — at least 64 characters
+5. **Restrict `CORS_ALLOWED_ORIGINS`** — to your frontend domain(s)
+6. **Consider external managed databases** — for PostgreSQL and Redis at scale
+7. **Add TLS termination** — via a reverse proxy (nginx, Caddy, or cloud LB)
+
+## License
+
+MIT — see [LICENSE](../LICENSE) for details.
+This is the backend component of the Crucible project, providing a JSON schema generator utility.
+
+## Features
+
+- JSON Schema generation using `schemars`
+- Async HTTP server with Axum
+- PostgreSQL database integration with SQLx
+- Redis caching and job queues
+- Comprehensive error handling and tracing
+
+## Usage
+
+Add to your `Cargo.toml`:
+
+```toml
+[dependencies]
+crucible-backend = { path = "../backend" }
+```
+
+Then use the JSON schema generator:
+
+```rust
+use crucible_backend::utils::json_schema::generate_json_schema;
+use serde::{Deserialize, Serialize};
+use schemars::JsonSchema;
+
+#[derive(Serialize, Deserialize, JsonSchema)]
+struct MyStruct {
+    field: String,
+}
+
+let schema = generate_json_schema::<MyStruct>();
+```
+
+## Running Tests
+
+```bash
+cargo test --manifest-path backend/Cargo.toml
+```
+
+## Building
+
+```bash
+cargo build --manifest-path backend/Cargo.toml
+```
+This is the backend service layer for the Crucible toolkit, providing performance profiling, mock service layers, specialized serialization utilities, and robust background monitoring.
+
+## Features
+
+### 🚀 Performance Profiling API
+High-performance endpoints for monitoring application health and system metrics.
+- `/api/v1/profiling/metrics`: Real-time system metrics.
+- `/api/v1/profiling/health`: System health status.
+- `/api/status`: Unified health, metrics, and active recovery tasks.
+
+### 🔭 OpenTelemetry Tracing (Issue #251)
+Production-grade distributed tracing with OTLP exporter and Jaeger integration.
+- **Full instrumentation**: HTTP handlers, database queries, Redis operations, background jobs
+- **Semantic conventions**: W3C trace context, OpenTelemetry semantic conventions
+- **Sampling strategies**: Environment-based sampling (100% dev, 10% staging, 1% prod)
+- **Zero overhead**: < 1% p95 latency impact with optimized span creation
+- **Jaeger UI**: Visual trace exploration at `http://localhost:16686`
+
+### 🧪 Mock Service Layer
+A robust mock layer for testing services in isolation, supporting both database and cache operations.
+
+### 🔢 Custom Serialization
+Specialized Serde serializers for high-precision types and Stellar-specific formats.
+
+### 🛠️ Background Services
+The backend runs several background workers for system health and data consistency.
+
+## Tech Stack
+- **Web Framework**: Axum (async Rust)
+- **Runtime**: Tokio
+- **Database**: PostgreSQL (via SQLx 0.8)
+- **Caching & Jobs**: Redis (via Apalis)
+- **Serialization**: Serde
+- **Observability**: Tracing + OpenTelemetry (OTLP)
+- **API Documentation**: Utoipa (Swagger UI)
+
+## Structure
+- `src/api/` — API handlers and routing
+- `src/services/` — Business logic and external integrations
+- `src/models/` — Data structures and database schemas
+- `tests/` — Integration and API tests
+- `src/api/` – API handlers and routing
+- `src/bin/` – Standalone service binaries
+- `src/config/` – Environment configuration and hot-reload
+- `src/db/` – Database utilities and seed data
+- `src/jobs/` – Background job definitions (Apalis)
+- `src/services/` – Business logic and external integrations
+- `src/telemetry/` – Observability and logging setup
+- `src/utils/` – Serialization, validation, XDR helpers
+- `src/test_utils/` – Mock traits for unit testing
+
+### API Handlers (`src/api/handlers/`)
+
+| Module | Description |
+|---|---|
+| `profiling` | System status, metrics, health, and profiling trigger endpoints |
+| `dashboard` | Aggregated dashboard data endpoint with Redis caching |
+| `stellar` | Stellar SEP-1 `.well-known/stellar.toml` endpoint |
+
+### Services (`src/services/`)
+
+| Module | Description |
+|---|---|
+| `sys_metrics` | Build system metrics exporter with PostgreSQL persistence and Redis caching (compilation times, dependency counts, cache hit rates) |
+| `error_recovery` | Tracks retry state for failing tasks with configurable max retries |
+| `log_aggregator` | Async MPSC-based log pipeline; persists entries via a background worker |
+| `log_alerts` | Threshold-based alerting over the log pipeline with sliding-window evaluation |
+| `feature_flags` | Feature flag management backed by PostgreSQL with Redis caching |
+| `alerts` | Critical-error notification dispatcher — deduplication, in-memory queue, Redis pub/sub |
+| `tracing` | OpenTelemetry tracing initialisation — wires `tracing` spans to an OTLP HTTP exporter |
+
+### Database (`src/db/`)
+
+| Module | Description |
+|---|---|
+| `seeds` | Idempotent seed data for development and test environments |
+| `test_coverage` | Code coverage tracking and caching for CI integration |
+| `tracing` | OpenTelemetry tracing service with OTLP exporter |
+
+### Middleware
+
+| Name | Description |
+|---|---|
+| `logging` | Captures request/response metadata, latency, and status codes; integrated with `tracing` and `log_aggregator` |
+
+### Binaries (`src/bin/`)
+
+| Binary | Description |
+|--------|-------------|
+| `backup` | Database backup and restore HTTP service + job enqueuer |
+
+### Database (`src/db/`)
+
+| Module | Description |
+|---|---|
+| `seeds` | Idempotent seed data for development and test environments |
+
+## Tech Stack
+- **Web Framework**: Axum (async Rust)
+- **Runtime**: Tokio
+- **Database**: PostgreSQL (via SQLx 0.8)
+- **Caching & Jobs**: Redis (via Apalis)
+- **Serialization**: Serde
+- **Observability**: OpenTelemetry + Tracing
+- **API Documentation**: Utoipa (Swagger UI)
+
+## Workers Module
+
+The backend includes a dedicated workers module for background processing and system monitoring:
+
+### 🌟 Cache Warming System
+Pre-loads frequently accessed data into Redis cache to improve performance.
+- Automatically warms dashboard metrics and popular build data
+- Configurable warm intervals and TTL settings
+- Integrated with PostgreSQL database queries
+
+### 🚀 Response Caching Middleware
+HTTP response caching middleware that stores API responses in Redis.
+- Automatic cache key generation based on request method, URI, and query parameters
+- Configurable TTL for cached responses
+- Integration with Axum middleware stack
+
+### 📊 Job Progress Tracking
+Monitors and reports progress for long-running background jobs.
+- Real-time progress tracking with percentage calculation
+- Redis-based storage for job state
+- Support for completion steps and total steps tracking
+
+### 🩺 Worker Health Monitoring
+Tracks and reports health status of background workers.
+- Heartbeat monitoring with configurable thresholds
+- Automatic health status calculation
+- Redis-based health state storage
+
+All workers are designed to be production-ready with comprehensive error handling, tracing integration, and proper resource management.
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/status` | System health, metrics, and active recovery tasks |
+| `POST` | `/api/profile` | Trigger a profiling collection run |
+| `GET` | `/health` | Backup service liveness probe |
+| `POST` | `/backups` | Enqueue a new backup job |
+| `GET` | `/backups` | List all backup records |
+| `GET` | `/backups/:id` | Get a single backup record |
+| `POST` | `/backups/:id/restore` | Enqueue a restore job for a backup |
+| `POST` | `/api/coverage` | Submit a new code coverage report |
+| `GET` | `/api/coverage/:project` | Get latest coverage report for a specific project |
+| `GET` | `/` | Base API greeting |
+| `GET` | `/.well-known/stellar.toml` | Stellar network metadata (SEP-1) |
+| `GET` | `/api/v1/profiling/metrics` | Detailed performance metrics (OpenAPI) |
+| `GET` | `/api/v1/profiling/health` | Service health check (OpenAPI) |
+| `GET` | `/api/v1/dashboard/metrics` | Dashboard aggregated metrics with Redis caching |
+| `GET` | `/api/v1/dashboard/contracts/:contract_id/stats` | Contract-specific statistics |
+| `GET` | `/api/v1/profiling/prometheus` | Prometheus-compatible metrics |
+| `GET` | `/api/status` | System health summary and recovery status |
+| `POST` | `/api/profile` | Trigger a manual profiling collection run |
+| `GET` | `/api/dashboard` | Aggregated dashboard data: metrics, recovery tasks, and active alerts (Redis-cached, 30 s TTL) |
+| `GET` | `/swagger-ui` | Interactive API documentation |
+| `GET` | `/api/v1/errors/dashboard/build-errors` | Returns build error analytics (total errors, error types, recent errors) |
+
+## Running
+## OpenTelemetry Tracing
+
+### Quick Start
+
+1. **Start Jaeger** (includes OTLP collector):
+   ```bash
+   docker-compose -f docker-compose-jaeger.yml up -d
+   ```
+
+2. **Run the backend** with tracing enabled:
+   ```bash
+   export OTLP_ENDPOINT=http://localhost:4317
+   export ENV=dev
+   cargo run -p backend
+   ```
+
+3. **View traces** in Jaeger UI:
+   ```
+   http://localhost:16686
+   ```
+
+### Architecture
+
+The tracing system instruments the entire request lifecycle:
+
+```
+HTTP Request → Axum Handler → Service Method → Database/Redis → Response
+     ↓              ↓               ↓                ↓
+  http.request  service.method  db.query      db.redis.command
+```
+
+### Instrumented Components
+
+#### HTTP Handlers (100% coverage)
+- ✅ `GET /api/v1/profiling/metrics` - Metrics collection
+- ✅ `GET /api/v1/profiling/health` - Health checks with DB ping
+- ✅ `GET /api/v1/profiling/prometheus` - Prometheus metrics export
+- ✅ `GET /api/status` - System status aggregation
+- ✅ `POST /api/profile` - Profile collection trigger
+- ✅ `GET /.well-known/stellar.toml` - Stellar TOML endpoint
+
+#### Service Methods (100% coverage)
+- ✅ `MetricsExporter::get_metrics()` - Metrics retrieval
+- ✅ `MetricsExporter::update_metrics()` - Metrics update
+- ✅ `ErrorManager::get_active_tasks()` - Recovery task listing
+- ✅ `ErrorManager::handle_error()` - Error recovery with retry logic
+- ✅ `FeatureFlagService::is_enabled()` - Feature flag check (Redis + DB)
+- ✅ `FeatureFlagService::set()` - Feature flag update (DB + cache invalidation)
+- ✅ `FeatureFlagService::get()` - Feature flag retrieval
+- ✅ `FeatureFlagService::list()` - Feature flag listing
+- ✅ `FeatureFlagService::delete()` - Feature flag deletion
+- ✅ `FeatureFlagService::flush_cache()` - Cache flush
+
+#### Background Jobs (100% coverage)
+- ✅ `monitor_transaction()` - Stellar transaction monitoring (Apalis job)
+
+### Semantic Conventions
+
+The tracing implementation follows OpenTelemetry semantic conventions:
+
+#### HTTP Spans
+```rust
+http.method = "GET"
+http.route = "/api/v1/profiling/metrics"
+http.status_code = 200
+http.flavor = "1.1"
+http.scheme = "https"
+user.id = "user123"
+otel.kind = "server"
+```
+
+#### Database Spans (PostgreSQL)
+```rust
+db.system = "postgres"
+db.statement = "SELECT * FROM users WHERE id = $1"  // truncated to 256 chars
+db.operation = "SELECT"
+db.rows_affected = 1
+otel.kind = "client"
+```
+
+#### Redis Spans
+```rust
+db.system = "redis"
+db.redis.command = "GET"
+db.redis.key = "flag:new_dashboard"
+otel.kind = "client"
+```
+
+#### Service Spans
+```rust
+service.name = "FeatureFlagService"
+service.method = "is_enabled"
+otel.kind = "internal"
+```
+
+#### Job Spans
+```rust
+job.name = "monitor_transaction"
+job.id = "550e8400-e29b-41d4-a716-446655440000"
+otel.kind = "internal"
+```
+
+### Configuration
+
+#### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint |
+| `ENV` | `dev` | Environment (dev, staging, production) |
+| `RUST_LOG` | `info,crucible=debug` | Log level filter |
+
+#### Sampling Strategies
+
+Sampling is automatically configured based on environment:
+
+| Environment | Sampling Rate | Strategy |
+|---|---|---|
+| `dev` | 100% | AlwaysOn |
+| `staging` | 10% | TraceIdRatioBased |
+| `production` | 1% | ParentBased + TraceIdRatioBased |
+
+#### Span Limits
+
+To prevent memory issues, spans have the following limits:
+
+- **Max attributes per span**: 128
+- **Max events per span**: 128
+- **Max links per span**: 128
+- **Query truncation**: 256 characters (first line only for multiline queries)
+
+### Jaeger UI Guide
+
+#### Searching Traces
+
+1. **By Service**: Select `crucible-backend` from the service dropdown
+2. **By Operation**: Filter by operation name (e.g., `http.request`, `db.query`)
+3. **By Tags**: Search by custom tags (e.g., `http.method=GET`, `user.id=user123`)
+4. **By Duration**: Find slow requests with min/max duration filters
+
+#### Understanding Traces
+
+A typical trace hierarchy:
+
+```
+http.request (GET /api/v1/profiling/health)
+├── service.method (MetricsExporter::get_metrics)
+├── db.query (SELECT 1)  ← Database health check
+└── service.method (ErrorManager::get_active_tasks)
+```
+
+#### Key Metrics
+
+- **Trace Duration**: Total request time (p50, p95, p99)
+- **Span Count**: Number of operations per request
+- **Error Rate**: Percentage of traces with errors
+- **Service Dependencies**: Visual service map
+
+### Performance Impact
+
+Benchmarked on a 4-core system with 8GB RAM:
+
+| Metric | Without Tracing | With Tracing | Overhead |
+>>>>>>> origin/main
 |---|---|---|---|
 | `APP_ENV` | `development` | Yes | `development`, `staging`, or `production` |
 | `APP_SERVER__PORT` | (from TOML) | No | HTTP server listen port. |
@@ -173,6 +713,7 @@ impl JobHandler for MyJob {
     }
 }
 ```
+<<<<<<< HEAD
 
 ### Built-in Jobs
 
@@ -234,3 +775,12 @@ async fn test_create_resource() {
 
 ## 📄 License
 MIT — see [LICENSE](../LICENSE) for details.
+=======
+## Structure
+- `src/api/` – API handlers and routing
+- `src/config/` – Environment configuration
+- `src/db/` – Database utilities and seed data
+- `src/jobs/` – Background job definitions (Apalis)
+- `src/services/` – Business logic and external integrations
+- `src/telemetry/` – Observability and logging setup
+>>>>>>> origin/main
