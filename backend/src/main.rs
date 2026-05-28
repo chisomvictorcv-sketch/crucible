@@ -511,6 +511,10 @@ async fn main() -> Result<(), anyhow::Error> {
             .route("/contracts/:contract_id/stats", get(dashboard::get_contract_stats))
             .with_state(dashboard_state)
         )
+        .nest(
+            "/api/v1/errors",
+            errors::error_analytics_routes(db_pool.clone(), redis_conn_dashboard.clone())
+        )
         .route("/api/status", get(profiling::get_system_status))
         .route("/api/profile", post(profiling::trigger_profile_collection))
         .with_state(profiling_state)

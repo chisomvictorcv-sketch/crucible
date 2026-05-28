@@ -18,6 +18,21 @@ High-performance Rust backend for Log-Based Alerting.
 ### Log Ingestion
 - `POST /api/alerts/ingest` - Ingest a log entry for pattern matching.
 
+### Build Error Analytics Dashboard API
+- `GET /api/v1/errors/dashboard/build-errors` — Returns build error analytics (total errors, error types, recent errors)
+    - **Response:**
+      ```json
+      {
+        "total_errors": 42,
+        "error_types": [["TypeA", 20], ["TypeB", 22]],
+        "recent_errors": [
+          {"id": 1, "error_type": "TypeA", "message": "...", "occurred_at": "2024-05-28T12:34:56"}
+        ]
+      }
+      ```
+    - **Description:**
+      Returns analytics for build errors, including total count, breakdown by type, and recent errors. Uses Redis for caching and SQLx for DB access. See `src/api/handlers/errors.rs` for details.
+
 ## Database Schema
 ```sql
 CREATE TABLE log_alert_rules (
@@ -446,6 +461,7 @@ The backend runs several background workers for system health and data consisten
 | `POST` | `/api/profile` | Trigger a manual profiling collection run |
 | `GET` | `/api/dashboard` | Aggregated dashboard data: metrics, recovery tasks, and active alerts (Redis-cached, 30 s TTL) |
 | `GET` | `/swagger-ui` | Interactive API documentation |
+| `GET` | `/api/v1/errors/dashboard/build-errors` | Returns build error analytics (total errors, error types, recent errors) |
 
 ## Running
 ## OpenTelemetry Tracing

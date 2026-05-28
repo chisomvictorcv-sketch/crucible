@@ -144,39 +144,41 @@ pub async fn handle_get_config(
     let config = state.config_manager.load();
     // In a real app, we would sanitize sensitive fields like DB passwords
     Json(config)
-//! Configuration hot-reload.
-//!
-//! This module provides [`ConfigWatcher`], which holds the live [`AppConfig`]
-//! behind an `Arc<RwLock<_>>` and can reload it at any time — either
-//! programmatically via [`ConfigWatcher::reload`] or automatically by
-//! subscribing to a Redis pub/sub channel with [`ConfigWatcher::watch`].
-//!
-//! When a reload message arrives on the Redis channel the watcher fetches the
-//! new configuration JSON from a Redis key, deserialises it, and atomically
-//! swaps the in-memory value. All readers that hold a clone of the
-//! [`ConfigHandle`] see the new values on their next read without any restart.
-//!
-//! # Example
-//!
-//! ```rust,no_run
-//! use backend::config::reload::{AppConfig, ConfigWatcher};
-//!
-//! # async fn example() -> anyhow::Result<()> {
-//! let watcher = ConfigWatcher::new(AppConfig::default());
-//! let handle = watcher.handle();
-//!
-//! // Read the current config
-//! let cfg = handle.get().await;
-//! println!("log level: {}", cfg.log_level);
-//!
-//! // Trigger a manual reload
-//! watcher.reload(AppConfig {
-//!     log_level: "info".to_string(),
-//!     ..AppConfig::default()
-//! }).await;
-//! # Ok(())
-//! # }
-//! ```
+}
+
+/// Configuration hot-reload.
+//
+// This module provides [`ConfigWatcher`], which holds the live [`AppConfig`]
+// behind an `Arc<RwLock<_>>` and can reload it at any time — either
+// programmatically via [`ConfigWatcher::reload`] or automatically by
+// subscribing to a Redis pub/sub channel with [`ConfigWatcher::watch`].
+//
+// When a reload message arrives on the Redis channel the watcher fetches the
+// new configuration JSON from a Redis key, deserialises it, and atomically
+// swaps the in-memory value. All readers that hold a clone of the
+// [`ConfigHandle`] see the new values on their next read without any restart.
+//
+// # Example
+//
+// ```rust,no_run
+// use backend::config::reload::{AppConfig, ConfigWatcher};
+//
+// # async fn example() -> anyhow::Result<()> {
+// let watcher = ConfigWatcher::new(AppConfig::default());
+// let handle = watcher.handle();
+//
+// // Read the current config
+// let cfg = handle.get().await;
+// println!("log level: {}", cfg.log_level);
+//
+// // Trigger a manual reload
+// watcher.reload(AppConfig {
+//     log_level: "info".to_string(),
+//     ..AppConfig::default()
+// }).await;
+// # Ok(())
+// # }
+// ```
 //!
 //! # Redis protocol
 //!
