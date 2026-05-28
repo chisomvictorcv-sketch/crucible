@@ -1,9 +1,9 @@
 [package]
-name = "backend"
+
+<<<<<<< HEAD
+description = "Backend API server for the Crucible smart contract testing platform"name = "backend"
 version = "0.1.0"
 edition = "2021"
-<<<<<<< HEAD
-description = "Backend API server for the Crucible smart contract testing platform"
 license = "MIT"
 authors = ["Crucible Contributors"]
 
@@ -12,15 +12,21 @@ name = "crucible-backend"
 path = "src/main.rs"
 
 [[bin]]
-name = "backup"
-path = "src/bin/backup.rs"
+
 =======
 
+name = "backup"
+path = "src/bin/backup.rs"
 [dependencies]
 # Web framework
 axum = { version = "0.7", features = ["macros"] }
 tower = { version = "0.4", features = ["full"] }
-tower-http = { version = "0.5", features = ["cors", "trace", "compression-gzip", "request-id"] }
+tower-http = { version = "0.5", features = [
+    "cors",
+    "trace",
+    "compression-gzip",
+    "request-id",
+] }
 
 # Async runtime
 tokio = { version = "1", features = ["full"] }
@@ -81,7 +87,11 @@ tower-http = { version = "0.5", features = ["cors", "trace"] }
 tower_governor = "0.4"
 opentelemetry = { version = "0.31", features = ["trace"] }
 opentelemetry_sdk = { version = "0.31", features = ["trace", "rt-tokio"] }
-opentelemetry-otlp = { version = "0.31", default-features = false, features = ["trace", "http-proto", "reqwest-client"] }
+opentelemetry-otlp = { version = "0.31", default-features = false, features = [
+    "trace",
+    "http-proto",
+    "reqwest-client",
+] }
 tracing-opentelemetry = { version = "0.32", default-features = false }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 # OpenTelemetry and tracing instrumentation
@@ -89,12 +99,13 @@ opentelemetry-semantic-conventions = "0.16"
 tonic = "0.12"
 
 [profile.release]
+
+>>>>>>> origin/main
+
 opt-level = 3
 lto = true
 codegen-units = 1
 strip = true
->>>>>>> origin/main
-
 [[bin]]
 name = "backup"
 path = "src/bin/backup.rs"
@@ -108,16 +119,33 @@ testutils = ["mockall"]
 # Web framework
 axum = { version = "0.7", features = ["macros"] }
 tower = { version = "0.5", features = ["full", "util"] }
-tower-http = { version = "0.5", features = ["cors", "trace", "compression-gzip", "request-id"] }
+tower-http = { version = "0.5", features = [
+    "cors",
+    "trace",
+    "compression-gzip",
+    "request-id",
+] }
 
 # Async runtime
 tokio = { version = "1", features = ["full"] }
 
 # Database (Keep 0.8 from feature branch)
-sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "json", "migrate", "macros"] }
+sqlx = { version = "0.8", features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "chrono",
+    "uuid",
+    "json",
+    "migrate",
+    "macros",
+] }
 
 # Redis (Keep 0.27 from feature branch)
-redis = { version = "0.27", features = ["tokio-comp", "json", "connection-manager"] }
+redis = { version = "0.27", features = [
+    "tokio-comp",
+    "json",
+    "connection-manager",
+] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
@@ -130,7 +158,11 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # OpenTelemetry (Upgrade to 0.31+ from main branch)
 opentelemetry = { version = "0.31", features = ["trace"] }
 opentelemetry_sdk = { version = "0.31", features = ["trace", "rt-tokio"] }
-opentelemetry-otlp = { version = "0.31", default-features = false, features = ["trace", "http-proto", "reqwest-client"] }
+opentelemetry-otlp = { version = "0.31", default-features = false, features = [
+    "trace",
+    "http-proto",
+    "reqwest-client",
+] }
 tracing-opentelemetry = { version = "0.32", default-features = false }
 opentelemetry-semantic-conventions = "0.16"
 
