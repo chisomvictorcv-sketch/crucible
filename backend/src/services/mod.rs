@@ -1,5 +1,6 @@
 pub mod log_alerts;
 pub mod alerts;
+pub mod audit;
 pub mod error_recovery;
 pub mod feature_flags;
 pub mod log_aggregator;
