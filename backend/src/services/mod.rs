@@ -10,3 +10,7 @@ pub mod sys_metrics;
 pub mod tracing;
 pub mod compilation;
 pub mod dependency_analyzer;
+pub mod contract_registry;
+pub mod doc_generator;
+pub mod contract_monitor;
+pub mod security_scanner;
