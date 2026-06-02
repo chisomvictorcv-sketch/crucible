@@ -22,4 +22,5 @@ pub mod log_aggregator;
 pub mod log_alerts;
 pub mod security_scanner;
 pub mod sys_metrics;
+pub mod test_coverage;
 pub mod tracing;
